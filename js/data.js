@@ -2,19 +2,15 @@ const DB = {
   users: [
     { id: 1, nombre: "Oscar Baldeón", correo: "oscarbaldeon@igualab.org", rol: "superadmin", estado: "Activo" },
     { id: 2, nombre: "María López", correo: "maria.lopez@igualab.org", rol: "administrador", estado: "Activo" },
-    { id: 3, nombre: "Juan Pérez", correo: "juan.perez@igualab.org", rol: "usuario", estado: "Activo" },
-    { id: 4, nombre: "Rosa Quispe", correo: "rosa.quispe@igualab.org", rol: "administrador", estado: "Inactivo" },
-    { id: 5, nombre: "Diego Torres", correo: "diego.torres@igualab.org", rol: "usuario", estado: "Activo" }
+    { id: 3, nombre: "Rosa Quispe", correo: "rosa.quispe@igualab.org", rol: "administrador", estado: "Activo" }
   ],
   roleLabels: {
     superadmin: "Superadmin",
-    administrador: "Administrador",
-    usuario: "Usuario Operativo"
+    administrador: "Administrador"
   },
   demoAccounts: {
     superadmin: { correo: "oscarbaldeon@igualab.org", nombre: "Oscar Baldeón" },
-    administrador: { correo: "maria.lopez@igualab.org", nombre: "María López" },
-    usuario: { correo: "juan.perez@igualab.org", nombre: "Juan Pérez" }
+    administrador: { correo: "maria.lopez@igualab.org", nombre: "María López" }
   },
   empresas: [
     { id: "andina", nombre: "Minera Andina S.A.A.", ticker: "MINAND", sector: "Minería", esg: 62, riesgo: "Alto" },

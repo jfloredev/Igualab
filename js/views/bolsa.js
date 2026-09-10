@@ -1,6 +1,6 @@
 Views.bolsa = {
   html() {
-    const soloLectura = App.state.role === "usuario";
+    const soloLectura = true;
     return `
       ${Cards.sectionHeader("Bolsa de Valores · Sostenibilidad", "Dashboards y tablas interactivas de emisores. " + (soloLectura ? "Acceso de solo lectura (RF-03)." : "Explora por empresa, sector o periodo (RF-08)."))}
       <div class="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden">

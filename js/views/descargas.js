@@ -9,7 +9,7 @@ Views.descargas = {
         <td class="py-md px-md text-right"><button data-descargar="${r.id}" class="flex items-center gap-xs px-md py-sm rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:bg-surface-tint transition-colors"><span class="material-symbols-outlined text-[16px]">download</span> Descargar</button></td>
       </tr>`).join("");
     return `
-      ${Cards.sectionHeader("Descargar reportes PDF", "Reportes de prospección generados por el Administrador. El Usuario Operativo solo visualiza y descarga (RF-03).")}
+      ${Cards.sectionHeader("Descargar reportes PDF", "Reportes de prospección generados por el Administrador. Lista de solo lectura para visualizar y descargar (RF-016/017).")}
       <div class="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">

@@ -15,22 +15,14 @@ const App = (() => {
     superadmin: [
       { key: "dashboard", label: "Dashboard", icon: "dashboard" },
       { key: "usuarios", label: "Usuarios y roles", icon: "group" },
+      { key: "ingesta", label: "Ingesta de documentos", icon: "upload_file" },
       { key: "config", label: "Configuración", icon: "settings" },
-      { key: "auditoria", label: "Auditoría de accesos", icon: "history" },
-      { key: "actualizar", label: "Actualizar base de datos", icon: "sync" },
-      { key: "bolsa", label: "Bolsa de Valores", icon: "candlestick_chart" }
+      { key: "auditoria", label: "Auditoría de accesos", icon: "history" }
     ],
     administrador: [
       { key: "dashboard", label: "Dashboard", icon: "dashboard" },
-      { key: "ingesta", label: "Ingesta de datos", icon: "upload_file" },
       { key: "ia", label: "Asistente de IA", icon: "psychology" },
       { key: "reportes", label: "Reportes de prospección", icon: "assessment" },
-      { key: "linkedin", label: "Contactos LinkedIn", icon: "person_search" },
-      { key: "bolsa", label: "Bolsa de Valores", icon: "candlestick_chart" }
-    ],
-    usuario: [
-      { key: "dashboard", label: "Dashboard", icon: "dashboard" },
-      { key: "bolsa", label: "Bolsa de Valores", icon: "candlestick_chart" },
       { key: "descargas", label: "Descargar reportes", icon: "download" }
     ]
   };
@@ -235,17 +227,17 @@ const App = (() => {
       <div class="p-xl text-center">
         <span class="material-symbols-outlined text-[48px] text-error">no_accounts</span>
         <h3 class="font-title-lg text-title-lg text-on-background mt-md">Revocar rol de ${UI.esc(u.nombre)}?</h3>
-        <p class="text-body-md text-on-surface-variant mt-sm">El usuario pasará a un acceso más restringido (Usuario Operativo, solo lectura).</p>
+        <p class="text-body-md text-on-surface-variant mt-sm">Se revocará el rol de Administrador y el acceso quedará deshabilitado.</p>
         <div class="flex justify-center gap-sm mt-lg">
           <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant">Cancelar</button>
           <button id="rev-ok" class="px-lg py-sm rounded-lg bg-error text-on-error text-label-md font-semibold">Revocar rol</button>
         </div>
       </div>`);
     overlay.querySelector("#rev-ok").addEventListener("click", () => {
-      u.rol = "usuario";
-      pushAudit("Cambio de rol", `Revocó rol de '${u.nombre}' → Usuario Operativo`);
+      u.estado = "Inactivo";
+      pushAudit("Cambio de rol", `Revocó rol de Administrador a '${u.nombre}' → acceso deshabilitado`);
       save(); UI.closeModal(); render();
-      UI.toast("Rol revocado. Acceso restringido.", "success");
+      UI.toast("Rol revocado. Acceso deshabilitado.", "success");
     });
   }
 
@@ -316,13 +308,19 @@ const App = (() => {
     UI.toast(expired ? "Tu sesión expiró por inactividad. Vuelve a autenticarte." : "Sesión cerrada.", expired ? "warn" : "info");
   }
 
+  const ROLES_VALIDOS = ["superadmin", "administrador"];
+
   function login(correo, pass) {
     const err = document.getElementById("login-error");
-    const fail = (msg) => { err.textContent = msg; err.classList.remove("hidden"); };
     err.classList.add("hidden");
-    if (correo.toLowerCase().includes("bloqueado")) return fail("Cuenta bloqueada: contacta al Superadmin. El intento fue registrado en auditoría.");
-    const user = state.users.find((u) => u.correo === correo && u.estado === "Activo");
-    if (correo.toLowerCase().includes("error") || !pass || !user) return fail("Credenciales incorrectas. Verifica tu correo y contraseña e inténtalo de nuevo.");
+
+    // Mock sin restricciones: siempre entra.
+    // Si el correo coincide con un usuario, se usa; si no, entra con uno por defecto.
+    const user =
+      state.users.find((u) => correo && u.correo.toLowerCase() === correo.toLowerCase()) ||
+      state.users.find((u) => u.estado === "Activo" && ROLES_VALIDOS.includes(u.rol)) ||
+      state.users[0];
+
     state.logged = true;
     state.user = user;
     state.role = user.rol;
@@ -338,12 +336,6 @@ const App = (() => {
       e.preventDefault();
       login(document.getElementById("login-email").value.trim(), document.getElementById("login-pass").value);
     });
-    document.querySelectorAll("[data-demo-login]").forEach((b) => b.addEventListener("click", () => {
-      const acc = DB.demoAccounts[b.dataset.demoLogin];
-      document.getElementById("login-email").value = acc.correo;
-      document.getElementById("login-pass").value = "demo1234";
-      login(acc.correo, "demo1234");
-    }));
     document.getElementById("toggle-pass").addEventListener("click", () => {
       const p = document.getElementById("login-pass");
       p.type = p.type === "password" ? "text" : "password";
