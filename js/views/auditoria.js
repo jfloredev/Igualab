@@ -8,12 +8,12 @@ Views.auditoria = {
         <td class="py-md px-md">${Helpers.esc(a.accion)}</td>
       </tr>`).join("");
     return `
-      ${Cards.sectionHeader("Auditoría de accesos", "Registro inmutable de eventos sensibles. Solo lectura (RNF-04).",
+      ${Cards.sectionHeader("Auditoría de eventos", "Registro automático e inmutable de eventos sensibles. Solo lectura (RN-029). Consigna cuenta, fecha, hora y tipo (RN-028).",
       `<button data-action="export-audit" class="flex items-center gap-sm px-md py-sm bg-surface rounded-lg border border-outline-variant text-on-surface text-label-md font-semibold hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-[18px]">download</span> Exportar</button>`)}
       <div class="bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden">
         <div class="p-lg border-b border-outline-variant bg-surface-bright flex flex-wrap gap-md items-end">
           <div class="flex flex-col gap-xs"><label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Tipo de evento</label>
-            <select id="aud-tipo" class="rounded-lg border-outline-variant bg-surface-container-lowest py-sm px-md text-body-md focus:border-primary focus:ring-primary"><option value="">Todos</option><option>Inicio de sesión</option><option>Cambio de rol</option><option>Ingesta de datos</option><option>Actualización BD</option><option>Generación de reporte</option><option>Descarga</option><option>Configuración</option></select></div>
+            <select id="aud-tipo" class="rounded-lg border-outline-variant bg-surface-container-lowest py-sm px-md text-body-md focus:border-primary focus:ring-primary"><option value="">Todos</option><option>Inicio de sesión</option><option>Cambio de rol</option><option>Cambio de estado GRI</option><option>Ingesta de documento</option><option>Rechazo de documento</option><option>Registro de empresa</option><option>Generación de reporte</option><option>Descarga</option><option>Configuración</option><option>Consulta IA</option></select></div>
           <div class="flex flex-col gap-xs"><label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Usuario</label>
             <select id="aud-user" class="rounded-lg border-outline-variant bg-surface-container-lowest py-sm px-md text-body-md focus:border-primary focus:ring-primary"><option value="">Todos</option>${App.state.users.map((u) => `<option>${Helpers.esc(u.nombre)}</option>`).join("")}</select></div>
           <div class="flex flex-col gap-xs"><label class="font-label-sm text-label-sm text-on-surface-variant uppercase">Desde</label>

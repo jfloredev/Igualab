@@ -1,104 +1,175 @@
+// ============================================================================
+//  Igualab · Datos del mock
+//  Alineado al Documento de Análisis y Diseño (RN-001 … RN-038 / RF / RNF).
+//  - Sólo dos roles: SuperAdmin y Administrador (RN-001).
+//  - Sectores en alcance: Minería, Petróleo y Gas, Energía (RN-019).
+//  - Estados GRI: OK, Baja sustancia, Sub-reportado (RN-016).
+//  - Puntaje ESG se CALCULA (RN-034 / RF-051): OK=100, Baja sustancia=50, Sub-reportado=0.
+// ============================================================================
+
 const DB = {
+  // --- Roles (RN-001: conjunto cerrado de dos roles) -----------------------
+  roleLabels: {
+    superadmin: "SuperAdmin",
+    administrador: "Administrador"
+  },
+
+  // Sectores acotados del análisis (RN-019).
+  sectores: ["Minería", "Petróleo y Gas", "Energía"],
+
+  // Estados de cumplimiento GRI (RN-016) y su puntaje ESG (RF-051).
+  estadosGri: ["OK", "Baja sustancia", "Sub-reportado"],
+  esgPuntaje: { "OK": 100, "Baja sustancia": 50, "Sub-reportado": 0 },
+
+  // --- Cuentas ---------------------------------------------------------------
+  // RN-002: exactamente una cuenta SuperAdmin. RN-006: la inicial no se crea por app.
+  // RN-008: toda cuenta creada por la app nace como Administrador.
   users: [
     { id: 1, nombre: "Oscar Baldeón", correo: "oscarbaldeon@igualab.org", rol: "superadmin", estado: "Activo" },
     { id: 2, nombre: "María López", correo: "maria.lopez@igualab.org", rol: "administrador", estado: "Activo" },
-    { id: 3, nombre: "Rosa Quispe", correo: "rosa.quispe@igualab.org", rol: "administrador", estado: "Activo" }
+    { id: 3, nombre: "Rosa Quispe", correo: "rosa.quispe@igualab.org", rol: "administrador", estado: "Activo" },
+    { id: 4, nombre: "Diego Farfán", correo: "diego.farfan@igualab.org", rol: "administrador", estado: "Inactivo" }
   ],
-  roleLabels: {
-    superadmin: "Superadmin",
-    administrador: "Administrador"
-  },
   demoAccounts: {
     superadmin: { correo: "oscarbaldeon@igualab.org", nombre: "Oscar Baldeón" },
     administrador: { correo: "maria.lopez@igualab.org", nombre: "María López" }
   },
+
+  // --- Empresas del catálogo (RN-035 / RF-052 / RF-053) ---------------------
+  // Sólo nombre + sector; el ESG y el riesgo se derivan del análisis.
   empresas: [
-    { id: "andina", nombre: "Minera Andina S.A.A.", ticker: "MINAND", sector: "Minería", esg: 62, riesgo: "Alto" },
-    { id: "bancosur", nombre: "Banco del Sur S.A.", ticker: "BANSUR", sector: "Banca", esg: 81, riesgo: "Bajo" },
-    { id: "energialima", nombre: "Energía Lima S.A.C.", ticker: "ENLIMA", sector: "Energía", esg: 74, riesgo: "Medio" },
-    { id: "pesquera", nombre: "Pesquera del Pacífico S.A.", ticker: "PESPAC", sector: "Pesca", esg: 58, riesgo: "Alto" }
+    { id: "andina", nombre: "Minera Andina S.A.A.", sector: "Minería", activa: true },
+    { id: "altiplano", nombre: "Minera Altiplano S.A.", sector: "Minería", activa: true },
+    { id: "amazonica", nombre: "Petrolera Amazónica S.A.", sector: "Petróleo y Gas", activa: true },
+    { id: "energialima", nombre: "Energía Lima S.A.C.", sector: "Energía", activa: true },
+    { id: "gassur", nombre: "Gas del Sur S.A.A.", sector: "Petróleo y Gas", activa: true }
   ],
-  gri: {
-    andina: [
-      { codigo: "GRI 401", tema: "Empleo", estado: "Sub-reportado", detalle: "Solo declara contrataciones, sin rotación ni beneficios" },
-      { codigo: "GRI 413", tema: "Comunidades locales", estado: "Baja sustancia", detalle: "Menciona consultas pero sin indicadores de impacto" },
-      { codigo: "GRI 306", tema: "Residuos", estado: "OK", detalle: "Reporte completo con metas de reducción" }
-    ],
-    bancosur: [
-      { codigo: "GRI 205", tema: "Anticorrupción", estado: "Baja sustancia", detalle: "Declara política sin casos ni capacitaciones" },
-      { codigo: "GRI 404", tema: "Formación", estado: "OK", detalle: "Horas de capacitación completas" }
-    ],
-    energialima: [
-      { codigo: "GRI 305", tema: "Emisiones", estado: "Sub-reportado", detalle: "Scope 3 omitido en cadena de suministro" },
-      { codigo: "GRI 308", tema: "Proveedores ambientales", estado: "OK", detalle: "Evaluación anual declarada" }
-    ],
-    pesquera: [
-      { codigo: "GRI 304", tema: "Biodiversidad", estado: "Sub-reportado", detalle: "Sin datos de bycatch ni áreas sensibles" },
-      { codigo: "GRI 403", tema: "Seguridad laboral", estado: "Baja sustancia", detalle: "Tasa de accidentes sin cobertura de proveedores" }
-    ]
-  },
-  sanciones: {
-    andina: [
-      { entidad: "Ministerio de Trabajo", motivo: "Consulta previa a comunidades", monto: 4200000, anio: 2024 },
-      { entidad: "OEFA", motivo: "Incumplimiento de instrumentos de gestión ambiental", monto: 1850000, anio: 2023 }
-    ],
-    bancosur: [
-      { entidad: "SBS", motivo: "Falta de reporte laboral oportuno", monto: 1100000, anio: 2024 }
-    ],
-    energialima: [
-      { entidad: "Osinergmin", motivo: "Reporte de emisiones incompleto", monto: 640000, anio: 2024 }
-    ],
-    pesquera: [
-      { entidad: "Producción (PRODUCE)", motivo: "Excedencia de cuota de pesca", monto: 2750000, anio: 2023 }
-    ]
-  },
-  bolsa: {
-    periodos: ["2023", "2024", "2025"],
-    series: {
-      andina: { precio: [12.4, 10.8, 13.2], emisiones: [845200, 810300, 792100], intensidad: [12.4, 11.8, 11.2] },
-      bancosur: { precio: [8.9, 9.7, 10.5], emisiones: [210500, 202100, 198400], intensidad: [3.2, 3.0, 2.9] },
-      energialima: { precio: [5.6, 6.1, 5.4], emisiones: [421000, 435600, 418900], intensidad: [6.8, 7.0, 6.6] },
-      pesquera: { precio: [3.2, 2.8, 3.5], emisiones: [95800, 101200, 96400], intensidad: [4.1, 4.3, 4.0] }
+
+  // --- Catálogo GRI corporativo versionado (RNF-022) ------------------------
+  // Referencia; el catálogo real corporativo tiene 40 códigos (RN-018).
+  griCatalogo: [
+    { codigo: "GRI 205", tema: "Anticorrupción" },
+    { codigo: "GRI 302", tema: "Energía" },
+    { codigo: "GRI 303", tema: "Agua y efluentes" },
+    { codigo: "GRI 304", tema: "Biodiversidad" },
+    { codigo: "GRI 305", tema: "Emisiones" },
+    { codigo: "GRI 306", tema: "Residuos" },
+    { codigo: "GRI 308", tema: "Evaluación ambiental de proveedores" },
+    { codigo: "GRI 401", tema: "Empleo" },
+    { codigo: "GRI 403", tema: "Seguridad y salud en el trabajo" },
+    { codigo: "GRI 404", tema: "Formación y enseñanza" },
+    { codigo: "GRI 413", tema: "Comunidades locales" }
+  ],
+
+  // --- Análisis persistido por empresa + año (RN-017 / RF-038 / RF-039) -----
+  // Clave: "<empresaId>|<anio>". El estado GRI lo asigna manualmente el
+  // Administrador (RN-016). La cita textual es la evidencia del documento (RN-022).
+  // Las sanciones provienen sólo de los documentos ingestados (RN-015);
+  // monto null => "no cuantificada" (RN-032 / RF-039).
+  analisis: {
+    "andina|2024": {
+      evidencia: { gri: true, sanciones: true },
+      gri: [
+        { codigo: "GRI 401", tema: "Empleo", estado: "Sub-reportado", cita: "«Durante 2024 se realizaron 312 nuevas contrataciones» — no se reporta rotación ni desglose por género.", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 74" },
+        { codigo: "GRI 413", tema: "Comunidades locales", estado: "Baja sustancia", cita: "«Se sostuvieron mesas de diálogo con comunidades del área de influencia» — sin indicadores de impacto ni acuerdos.", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 88" },
+        { codigo: "GRI 306", tema: "Residuos", estado: "OK", cita: "«Se gestionaron 12,400 t de residuos con meta de reducción del 8% y trazabilidad por relave».", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 102" },
+        { codigo: "GRI 305", tema: "Emisiones", estado: "Baja sustancia", cita: "«Las emisiones directas Scope 1 fueron 845,200 tCO₂e» — Scope 3 no reportado.", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 96" },
+        { codigo: "GRI 303", tema: "Agua y efluentes", estado: "OK", cita: "«Recirculación del 71% del agua industrial con reporte de vertimientos autorizados».", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 99" }
+      ],
+      sanciones: [
+        { entidad: "Ministerio de Trabajo (SUNAFIL)", motivo: "Observaciones en consulta previa a comunidades", monto: 4200000, cita: "«Pasivo contingente por procedimiento sancionador N.° 214-2024» — sección Pasivos contingentes.", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 142" },
+        { entidad: "OEFA", motivo: "Incumplimiento de instrumentos de gestión ambiental", monto: null, cita: "«La empresa afronta un procedimiento de OEFA cuyo monto se encuentra en determinación».", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 143" }
+      ]
+    },
+    "andina|2023": {
+      evidencia: { gri: true, sanciones: true },
+      gri: [
+        { codigo: "GRI 401", tema: "Empleo", estado: "Sub-reportado", cita: "«Se incorporaron 280 colaboradores» — sin datos de rotación.", doc: "Memoria Anual 2023 - Minera Andina S.A.A.", pagina: "p. 68" },
+        { codigo: "GRI 413", tema: "Comunidades locales", estado: "Sub-reportado", cita: "Mención genérica sin evidencia de programas comunitarios.", doc: "Memoria Anual 2023 - Minera Andina S.A.A.", pagina: "p. 80" },
+        { codigo: "GRI 306", tema: "Residuos", estado: "Baja sustancia", cita: "«Se dispuso de residuos conforme a normativa» — sin metas.", doc: "Memoria Anual 2023 - Minera Andina S.A.A.", pagina: "p. 91" }
+      ],
+      sanciones: [
+        { entidad: "OEFA", motivo: "Incumplimiento de instrumentos de gestión ambiental", monto: 1850000, cita: "«Resolución N.° 087-2023-OEFA/CD».", doc: "Memoria Anual 2023 - Minera Andina S.A.A.", pagina: "p. 138" }
+      ]
+    },
+    "amazonica|2024": {
+      evidencia: { gri: true, sanciones: true },
+      gri: [
+        { codigo: "GRI 305", tema: "Emisiones", estado: "Sub-reportado", cita: "«Se reportan emisiones de operaciones propias» — sin cadena de suministro (Scope 3).", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 41" },
+        { codigo: "GRI 306", tema: "Residuos", estado: "Baja sustancia", cita: "«Gestión de lodos de perforación conforme a normativa» — sin volúmenes.", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 44" },
+        { codigo: "GRI 304", tema: "Biodiversidad", estado: "OK", cita: "«Plan de manejo con línea base de biodiversidad y monitoreo trimestral en 3 lotes».", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 47" },
+        { codigo: "GRI 413", tema: "Comunidades locales", estado: "Baja sustancia", cita: "«Acuerdos con comunidades nativas» — sin seguimiento de compromisos.", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 52" }
+      ],
+      sanciones: [
+        { entidad: "OEFA", motivo: "Derrame no reportado oportunamente", monto: 3100000, cita: "«Multa firme por Res. N.° 145-2024-OEFA».", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 58" }
+      ]
+    },
+    "energialima|2024": {
+      evidencia: { gri: true, sanciones: true },
+      gri: [
+        { codigo: "GRI 302", tema: "Energía", estado: "OK", cita: "«35% de la generación provino de fuentes renovables, con meta a 50% al 2027».", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 62" },
+        { codigo: "GRI 305", tema: "Emisiones", estado: "Sub-reportado", cita: "«Emisiones Scope 1 y 2 reportadas» — Scope 3 de la cadena de suministro omitido.", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 87" },
+        { codigo: "GRI 308", tema: "Evaluación ambiental de proveedores", estado: "OK", cita: "«El 100% de proveedores críticos fue evaluado ambientalmente en 2024».", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 90" }
+      ],
+      sanciones: [
+        { entidad: "Osinergmin", motivo: "Reporte de emisiones incompleto", monto: 640000, cita: "«Resolución de sanción por reporte parcial de emisiones».", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 120" }
+      ]
+    },
+    "altiplano|2024": {
+      evidencia: { gri: true, sanciones: false },
+      gri: [
+        { codigo: "GRI 403", tema: "Seguridad y salud en el trabajo", estado: "OK", cita: "«Índice de frecuencia de accidentes 1.2, con cobertura de contratistas».", doc: "Reporte de Sostenibilidad GRI 2024 - Minera Altiplano S.A.", pagina: "p. 33" },
+        { codigo: "GRI 303", tema: "Agua y efluentes", estado: "Baja sustancia", cita: "«Uso responsable del agua» — sin volúmenes ni recirculación.", doc: "Reporte de Sostenibilidad GRI 2024 - Minera Altiplano S.A.", pagina: "p. 39" }
+      ],
+      sanciones: []
     }
   },
+
+  // --- Documentos ingestados (RN-011 / RN-014 / RN-033) ---------------------
+  // tipo ∈ {Memoria Anual, Reporte de Sostenibilidad GRI}. Sólo Markdown (RN-012).
+  // estado ∈ {Éxito, En proceso, Rechazado} (RF-024).
   documents: [
-    { id: "d1", nombre: "Memoria Anual 2024 - Minera Andina S.A.A.", tipo: "Memoria Anual", empresa: "Minera Andina S.A.A.", anio: 2024, sector: "Minería", fuente: "Bolsa de Valores de Lima", estado: "Disponible", fecha: "2026-08-20 10:14", tamano: "4.2 MB" },
-    { id: "d2", nombre: "Reporte de Sostenibilidad GRI 2024 - Banco del Sur", tipo: "Reporte GRI", empresa: "Banco del Sur S.A.", anio: 2024, sector: "Banca", fuente: "Web corporativa", estado: "Disponible", fecha: "2026-08-19 16:40", tamano: "8.7 MB" },
-    { id: "d3", nombre: "Memoria Anual 2024 - Energía Lima S.A.C.", tipo: "Memoria Anual", empresa: "Energía Lima S.A.C.", anio: 2024, sector: "Energía", fuente: "Bolsa de Valores de Lima", estado: "Disponible", fecha: "2026-08-18 09:02", tamano: "3.9 MB" },
-    { id: "d4", nombre: "Reporte de Sostenibilidad 2023 - Pesquera del Pacífico", tipo: "Reporte GRI", empresa: "Pesquera del Pacífico S.A.", anio: 2023, sector: "Pesca", fuente: "Web corporativa", estado: "Disponible", fecha: "2026-08-15 11:31", tamano: "6.1 MB" },
-    { id: "d5", nombre: "Métricas Industriales 2024 - Sector Minería (XLSX)", tipo: "Métricas", empresa: "Varias", anio: 2024, sector: "Minería", fuente: "Base Igualab", estado: "Disponible", fecha: "2026-08-12 14:22", tamano: "1.3 MB" }
+    { id: "d1", empresaId: "andina", empresa: "Minera Andina S.A.A.", sector: "Minería", anio: 2024, tipo: "Memoria Anual", estado: "Éxito", fecha: "2026-08-20 10:14", cuenta: "Oscar Baldeón", hash: "9f2c…a41b", tamano: "4.2 MB" },
+    { id: "d2", empresaId: "andina", empresa: "Minera Andina S.A.A.", sector: "Minería", anio: 2023, tipo: "Memoria Anual", estado: "Éxito", fecha: "2026-08-18 09:30", cuenta: "Oscar Baldeón", hash: "1a77…c093", tamano: "3.8 MB" },
+    { id: "d3", empresaId: "amazonica", empresa: "Petrolera Amazónica S.A.", sector: "Petróleo y Gas", anio: 2024, tipo: "Reporte de Sostenibilidad GRI", estado: "Éxito", fecha: "2026-08-19 16:40", cuenta: "Oscar Baldeón", hash: "b3d1…7f22", tamano: "6.1 MB" },
+    { id: "d4", empresaId: "energialima", empresa: "Energía Lima S.A.C.", sector: "Energía", anio: 2024, tipo: "Memoria Anual", estado: "Éxito", fecha: "2026-08-18 09:02", cuenta: "Oscar Baldeón", hash: "77ce…10ab", tamano: "3.9 MB" },
+    { id: "d5", empresaId: "altiplano", empresa: "Minera Altiplano S.A.", sector: "Minería", anio: 2024, tipo: "Reporte de Sostenibilidad GRI", estado: "Éxito", fecha: "2026-08-15 11:31", cuenta: "Oscar Baldeón", hash: "5e90…dd12", tamano: "2.7 MB" }
   ],
+
+  // --- Reportes de prospección generados (RN-024 / RN-026 inmutables) -------
   reports: [
-    { id: "r1", nombre: "Prospección - Minera Andina S.A.A.", empresa: "Minera Andina S.A.A.", periodo: "2024", secciones: ["Brechas GRI", "Sanciones"], generadoPor: "María López", fecha: "2026-08-21 12:03" },
-    { id: "r2", nombre: "Prospección - Banco del Sur S.A.", empresa: "Banco del Sur S.A.", periodo: "2024", secciones: ["Brechas GRI"], generadoPor: "María López", fecha: "2026-08-20 09:47" }
+    {
+      id: "r1", empresaId: "andina", empresa: "Minera Andina S.A.A.", sector: "Minería", anio: 2024,
+      generadoPor: "María López", fecha: "2026-08-21 12:03"
+    }
   ],
+
+  // --- Auditoría (RN-027 / RN-028 / RN-029 inmutable) -----------------------
   audit: [
-    { id: 1, fecha: "2026-08-25 09:12", usuario: "Oscar Baldeón", tipo: "Inicio de sesión", accion: "Login exitoso (Superadmin)" },
-    { id: 2, fecha: "2026-08-25 09:31", usuario: "María López", tipo: "Ingesta de datos", accion: "Cargó 'Memoria Anual 2024 - Minera Andina S.A.A.'" },
-    { id: 3, fecha: "2026-08-25 10:02", usuario: "Oscar Baldeón", tipo: "Cambio de rol", accion: "Revocó rol de Administrador a Rosa Quispe" },
-    { id: 4, fecha: "2026-08-25 11:20", usuario: "María López", tipo: "Generación de reporte", accion: "Generó 'Prospección - Minera Andina S.A.A.'" },
-    { id: 5, fecha: "2026-08-25 11:44", usuario: "Juan Pérez", tipo: "Descarga", accion: "Descargó 'Prospección - Banco del Sur S.A.'" },
-    { id: 6, fecha: "2026-08-25 14:05", usuario: "Oscar Baldeón", tipo: "Configuración", accion: "Ajustó expiración de sesión a 30 minutos" }
+    { id: 1, fecha: "2026-08-25 09:12", usuario: "Oscar Baldeón", tipo: "Inicio de sesión", accion: "Login exitoso (SuperAdmin)" },
+    { id: 2, fecha: "2026-08-25 09:31", usuario: "Oscar Baldeón", tipo: "Ingesta de documento", accion: "Ingestó 'Memoria Anual 2024 - Minera Andina S.A.A.' (Minería · 2024)" },
+    { id: 3, fecha: "2026-08-25 09:48", usuario: "Oscar Baldeón", tipo: "Rechazo de documento", accion: "Rechazó carga duplicada (misma empresa, tipo y año) — RN-033" },
+    { id: 4, fecha: "2026-08-25 10:02", usuario: "Oscar Baldeón", tipo: "Cambio de rol", accion: "Deshabilitó la cuenta de Diego Farfán" },
+    { id: 5, fecha: "2026-08-25 11:20", usuario: "María López", tipo: "Cambio de estado GRI", accion: "Asignó estado 'Baja sustancia' a GRI 305 · Minera Andina 2024" },
+    { id: 6, fecha: "2026-08-25 11:44", usuario: "María López", tipo: "Generación de reporte", accion: "Generó reporte de prospección · Minera Andina S.A.A. (2024)" }
   ],
+
+  // --- Contactos de prospección (apoyo comercial) ---------------------------
   contacts: {
     andina: [
-      { nombre: "Carla Mendoza", cargo: "Gerente de Sostenibilidad", empresa: "Minera Andina S.A.A." },
-      { nombre: "Luis Farfán", cargo: "Gerente Financiero (CFO)", empresa: "Minera Andina S.A.A." },
-      { nombre: "Ana Ríos", cargo: "Jefa de Asuntos Corporativos", empresa: "Minera Andina S.A.A." }
+      { nombre: "Carla Mendoza", cargo: "Gerente de Sostenibilidad" },
+      { nombre: "Luis Farfán", cargo: "Gerente Financiero (CFO)" }
     ],
-    bancosur: [
-      { nombre: "Pedro Castillo V.", cargo: "Gerente de Sostenibilidad", empresa: "Banco del Sur S.A." },
-      { nombre: "Gabriela Ortiz", cargo: "Gerente de Riesgos", empresa: "Banco del Sur S.A." }
+    amazonica: [
+      { nombre: "Ricardo Salas", cargo: "Gerente de HSE" }
     ],
     energialima: [
-      { nombre: "Ricardo Salas", cargo: "Gerente de HSE", empresa: "Energía Lima S.A.C." },
-      { nombre: "Valeria Campos", cargo: "Gerente Financiero (CFO)", empresa: "Energía Lima S.A.C." }
-    ],
-    pesquera: [
-      { nombre: "Miguel Uribe", cargo: "Gerente de Cumplimiento", empresa: "Pesquera del Pacífico S.A." }
+      { nombre: "Valeria Campos", cargo: "Gerente Financiero (CFO)" }
     ]
   },
   horarios: ["Lun 26 · 09:00", "Lun 26 · 11:30", "Mar 27 · 15:00", "Mié 28 · 10:00", "Jue 29 · 16:30"],
+
+  // --- Portal público (solo lectura) · i18n ---------------------------------
   i18n: {
     es: {
       heroTitle: "Consulta unificada de reportes de sostenibilidad y memorias anuales",
@@ -164,36 +235,104 @@ const DB = {
       agendada: "¡Cita churasqa! Correo nikiyta apachimuwaq. 🎉"
     }
   },
+
+  // --- Respuestas simuladas del asistente RAG (RF-029 … RF-033) -------------
+  // Fundamentadas sólo en el corpus (RN-021) y con trazabilidad (RN-022).
   chat: {
     sugerencias: [
-      "¿Cuáles son los puntos débiles por sanciones de la Minera Andina?",
-      "Señala brechas GRI de Banco del Sur",
-      "Resume la memoria anual 2024 de Energía Lima"
+      "¿Qué sanciones identificas para esta empresa y año?",
+      "Señala las brechas GRI sub-reportadas",
+      "Resume el desempeño ambiental del año consultado"
     ],
     respuestas: {
       sanciones: {
-        texto: "En la memoria anual 2024 de <strong>Minera Andina S.A.A.</strong> identifico dos hitos negativos: una multa del <strong>Ministerio de Trabajo por S/ 4.2M</strong> asociada a consulta previa con comunidades y un procedimiento <strong>OEFA por S/ 1.85M</strong> en 2023 por incumplimiento de instrumentos de gestión ambiental. Estos puntos son la principal vulnerabilidad reputacional de la empresa y representan una oportunidad para acercarnos como aliados estratégicos en gestión social.",
+        texto: "En los documentos ingestados identifico una multa firme de <strong>OEFA por S/ 3.1M</strong> por un derrame no reportado oportunamente. La empresa reconoce el pasivo en su reporte, lo que constituye la principal vulnerabilidad reputacional y una oportunidad de acercamiento en gestión de crisis ambiental.",
         fuentes: [
-          { cita: "[1]", doc: "Memoria Anual 2024 - Minera Andina S.A.A.", pagina: "p. 142, sección 'Pasivos contingentes'" },
-          { cita: "[2]", doc: "Resoluciones OEFA 2023", pagina: "Res. N° 087-2023-OEFA/CD" }
+          { cita: "[1]", doc: "Reporte de Sostenibilidad GRI 2024 - Petrolera Amazónica S.A.", pagina: "p. 58 · sección 'Cumplimiento ambiental'" }
         ]
       },
       brechas: {
-        texto: "Analizando el reporte de sostenibilidad de <strong>Banco del Sur S.A.</strong>, el estándar <strong>GRI 205 (Anticorrupción)</strong> presenta baja sustancia: declara la política pero no reporta casos ni horas de capacitación, y el <strong>GRI 404 (Formación)</strong> está bien cubierto. Recomiendo profundizar en gobernanza como ángulo comercial.",
+        texto: "Según el análisis persistido, <strong>GRI 305 (Emisiones)</strong> figura como <strong>Sub-reportado</strong>: se declaran Scope 1 y 2 pero se omite el Scope 3 de la cadena de suministro. El resto de códigos evaluados presenta evidencia suficiente. Recomiendo abordar la huella de carbono ampliada como ángulo comercial.",
         fuentes: [
-          { cita: "[1]", doc: "Reporte de Sostenibilidad GRI 2024 - Banco del Sur", pagina: "p. 58, sección 'Ética y Cumplimiento'" }
+          { cita: "[1]", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 87 · sección 'Desempeño Ambiental'" }
         ]
       },
       resumen: {
-        texto: "La <strong>Memoria Anual 2024 de Energía Lima S.A.C.</strong> reporta utilidad neta de S/ 312M y destaca su plan de transición energética. En sostenibilidad, su punto débil es <strong>GRI 305</strong>: el Scope 3 está omitido en la cadena de suministro. Hay además una sanción de <strong>Osinergmin por S/ 640K</strong> por reporte de emisiones incompleto.",
+        texto: "La empresa consultada reporta avances en energía renovable (35% de la matriz) pero mantiene su punto débil en <strong>GRI 305</strong> por el Scope 3 omitido. Existe además una sanción de <strong>Osinergmin por S/ 640K</strong> por reporte de emisiones incompleto.",
         fuentes: [
-          { cita: "[1]", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 87, sección 'Desempeño Ambiental'" }
+          { cita: "[1]", doc: "Memoria Anual 2024 - Energía Lima S.A.C.", pagina: "p. 87" }
         ]
       },
+      // RN-037: fuera de dominio (sostenibilidad / GRI / sanciones / corpus).
+      fueraDominio: {
+        texto: "Solo puedo responder consultas sobre <strong>sostenibilidad empresarial, indicadores GRI, sanciones económicas</strong> o el contenido de los documentos ingestados (RN-037). Reformula tu pregunta dentro de ese alcance.",
+        fuentes: []
+      },
+      // RN-023 / RF-033: ausencia de información en el corpus.
       fallback: {
-        texto: "No encuentro información suficiente en los documentos ingestados para responder con precisión, y prefiero no inventar datos. ¿Deseas que busque en las memorias anuales de la Bolsa o en los reportes GRI disponibles?",
+        texto: "No encuentro información suficiente en los documentos ingestados para responder con precisión, y no infiero datos no respaldados (RN-023). ¿Deseas consultar otra empresa, año o indicador del corpus?",
         fuentes: []
       }
     }
   }
 };
+
+// ============================================================================
+//  Utilidades de dominio derivadas de los datos (no persistidas).
+// ============================================================================
+const Domain = (() => {
+  function analisisKey(empresaId, anio) { return `${empresaId}|${anio}`; }
+
+  function getAnalisis(empresaId, anio) {
+    return DB.analisis[analisisKey(empresaId, anio)] || null;
+  }
+
+  // Años con análisis/documentos disponibles para una empresa.
+  function aniosDeEmpresa(empresaId, state) {
+    const docs = (state ? state.documents : DB.documents)
+      .filter((d) => d.empresaId === empresaId && d.estado === "Éxito");
+    return [...new Set(docs.map((d) => d.anio))].sort((a, b) => b - a);
+  }
+
+  // RF-036 / RN-020: empresas con al menos un documento ingestado con éxito.
+  function empresasConDocumentos(state) {
+    const s = state || App.state;
+    const ids = new Set(s.documents.filter((d) => d.estado === "Éxito").map((d) => d.empresaId));
+    return DB.empresas.filter((e) => ids.has(e.id));
+  }
+
+  // RN-034 / RF-051: puntaje ESG = promedio de estados GRI (OK=100, Baja=50, Sub=0).
+  function esgScore(griArray) {
+    if (!griArray || !griArray.length) return null;
+    const suma = griArray.reduce((a, g) => a + (DB.esgPuntaje[g.estado] ?? 0), 0);
+    return Math.round(suma / griArray.length);
+  }
+
+  function riesgoDesdeEsg(esg) {
+    if (esg == null) return "Sin datos";
+    if (esg >= 70) return "Bajo";
+    if (esg >= 45) return "Medio";
+    return "Alto";
+  }
+
+  // Conteo de brechas por estado (RF-041).
+  function conteoEstados(griArray) {
+    const c = { "OK": 0, "Baja sustancia": 0, "Sub-reportado": 0 };
+    (griArray || []).forEach((g) => { if (c[g.estado] != null) c[g.estado]++; });
+    return c;
+  }
+
+  // Resumen de sanciones: total cuantificado y número sin monto (RF-040).
+  function resumenSanciones(sanciones) {
+    const lista = sanciones || [];
+    const cuantificadas = lista.filter((s) => s.monto != null);
+    const total = cuantificadas.reduce((a, s) => a + s.monto, 0);
+    const sinMonto = lista.length - cuantificadas.length;
+    return { total, sinMonto, cuantificadas: cuantificadas.length, cantidad: lista.length };
+  }
+
+  return {
+    analisisKey, getAnalisis, aniosDeEmpresa, empresasConDocumentos,
+    esgScore, riesgoDesdeEsg, conteoEstados, resumenSanciones
+  };
+})();

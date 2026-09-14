@@ -4,23 +4,28 @@ const App = (() => {
     role: null,
     user: null,
     lang: "es",
-    config: { minutos: 30, bloqueo: true, notif: false },
+    // RF-005: expiración por inactividad (2 horas por defecto). RN-036.
+    config: { minutos: 120, bloqueo: true, notif: false },
     users: [...DB.users],
-    documents: [...DB.documents],
+    empresas: JSON.parse(JSON.stringify(DB.empresas)),
+    documents: JSON.parse(JSON.stringify(DB.documents)),
     reports: [...DB.reports],
-    audit: [...DB.audit]
+    audit: [...DB.audit],
+    analisis: JSON.parse(JSON.stringify(DB.analisis))
   };
 
   const MENUS = {
     superadmin: [
       { key: "dashboard", label: "Dashboard", icon: "dashboard" },
       { key: "usuarios", label: "Usuarios y roles", icon: "group" },
+      { key: "empresas", label: "Empresas", icon: "domain" },
       { key: "ingesta", label: "Ingesta de documentos", icon: "upload_file" },
-      { key: "config", label: "Configuración", icon: "settings" },
-      { key: "auditoria", label: "Auditoría de accesos", icon: "history" }
+      { key: "auditoria", label: "Auditoría", icon: "history" },
+      { key: "config", label: "Configuración", icon: "settings" }
     ],
     administrador: [
       { key: "dashboard", label: "Dashboard", icon: "dashboard" },
+      { key: "analisis", label: "Análisis GRI y sanciones", icon: "rule" },
       { key: "ia", label: "Asistente de IA", icon: "psychology" },
       { key: "reportes", label: "Reportes de prospección", icon: "assessment" },
       { key: "descargas", label: "Descargar reportes", icon: "download" }
@@ -32,11 +37,13 @@ const App = (() => {
 
   function save() {
     try {
-      localStorage.setItem("igualab-mock", JSON.stringify({
+      localStorage.setItem("igualab-mock-v2", JSON.stringify({
         users: state.users,
+        empresas: state.empresas,
         documents: state.documents,
         reports: state.reports,
         audit: state.audit,
+        analisis: state.analisis,
         config: state.config
       }));
     } catch (e) { /* noop */ }
@@ -44,14 +51,16 @@ const App = (() => {
 
   function load() {
     try {
-      const raw = localStorage.getItem("igualab-mock");
+      const raw = localStorage.getItem("igualab-mock-v2");
       if (!raw) return;
       const d = JSON.parse(raw);
       Object.assign(state, {
         users: d.users || state.users,
+        empresas: d.empresas || state.empresas,
         documents: d.documents || state.documents,
         reports: d.reports || state.reports,
         audit: d.audit || state.audit,
+        analisis: d.analisis || state.analisis,
         config: d.config || state.config
       });
     } catch (e) { /* noop */ }
@@ -61,6 +70,7 @@ const App = (() => {
     return new Date().toLocaleString("es-PE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "");
   }
 
+  // RN-027 / RN-028: registro automático e inmutable (cuenta, fecha, hora, tipo).
   function pushAudit(tipo, accion) {
     state.audit.push({ id: Date.now(), fecha: now(), usuario: state.user ? state.user.nombre : "Sistema", tipo, accion });
     save();
@@ -83,7 +93,7 @@ const App = (() => {
       </a>`).join("") + `
       <div class="mt-xl px-sm ${state.role === "administrador" ? "" : "hidden"}">
         <a href="#/ia" class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary px-lg py-sm rounded-lg text-label-md font-bold hover:bg-primary-container transition-colors shadow-sm">
-          <span class="material-symbols-outlined filled text-lg">auto_awesome</span> Nueva Consulta AI
+          <span class="material-symbols-outlined filled text-lg">auto_awesome</span> Nueva consulta IA
         </a>
       </div>`;
   }
@@ -147,19 +157,21 @@ const App = (() => {
       el.addEventListener("click", () => {
         const a = el.dataset.action;
         if (a === "crear-usuario") userForm(null);
+        if (a === "crear-empresa") empresaForm();
         if (a === "cfg-save") saveConfig(root);
         if (a === "cfg-cancel") UI.toast("Cambios descartados.", "info");
         if (a === "export-audit") exportCSV("auditoria");
-        if (a === "export-bolsa") exportCSV("bolsa");
         if (a === "go-auditoria") { location.hash = "#/auditoria"; }
         if (a === "aud-clear") ["#aud-tipo", "#aud-user", "#aud-desde", "#aud-hasta"].forEach((s) => { root.querySelector(s).value = ""; root.querySelector(s).dispatchEvent(new Event("change")); });
       });
     });
     root.querySelectorAll("[data-editar]").forEach((b) => b.addEventListener("click", () => userForm(state.users.find((u) => u.id == b.dataset.editar))));
-    root.querySelectorAll("[data-baja]").forEach((b) => b.addEventListener("click", () => baja(state.users.find((u) => u.id == b.dataset.baja))));
-    root.querySelectorAll("[data-revocar]").forEach((b) => b.addEventListener("click", () => revocar(state.users.find((u) => u.id == b.dataset.revocar))));
+    root.querySelectorAll("[data-toggle]").forEach((b) => b.addEventListener("click", () => toggleEstado(state.users.find((u) => u.id == b.dataset.toggle))));
+    root.querySelectorAll("[data-transferir]").forEach((b) => b.addEventListener("click", () => transferirSuperadmin(state.users.find((u) => u.id == b.dataset.transferir))));
   }
 
+  // --- Usuarios --------------------------------------------------------------
+  // RN-008: la app crea siempre cuentas Administrador. RN-007: nombre, correo, contraseña.
   function userForm(u) {
     const esNuevo = !u;
     const overlay = UI.modal(`
@@ -170,10 +182,18 @@ const App = (() => {
             <input id="uf-nombre" value="${u ? UI.esc(u.nombre) : ""}" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="Ej. Ana García"/></div>
           <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Correo electrónico</label>
             <input id="uf-correo" type="email" value="${u ? UI.esc(u.correo) : ""}" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="ana@igualab.org"/></div>
-          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Rol</label>
-            <select id="uf-rol" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary">
-              ${Object.entries(DB.roleLabels).map(([k, l]) => `<option value="${k}" ${u && u.rol === k ? "selected" : ""}>${l}</option>`).join("")}
-            </select></div>
+          ${esNuevo ? `
+          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Contraseña temporal</label>
+            <input id="uf-pass" type="text" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="Mín. 8 · mayús., minús., dígito y símbolo"/>
+            <p class="font-label-sm text-label-sm text-outline">RNF-001: mínimo 8 caracteres con mayúscula, minúscula, dígito y carácter especial.</p></div>
+          <div class="flex items-center gap-sm rounded-lg bg-surface-container-low p-sm border border-outline-variant">
+            <span class="material-symbols-outlined text-secondary text-[18px]">badge</span>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">La cuenta se crea con rol <strong class="text-on-surface">Administrador</strong> (RN-008). El rol SuperAdmin sólo se obtiene por transferencia.</p>
+          </div>` : `
+          <div class="flex items-center gap-sm rounded-lg bg-surface-container-low p-sm border border-outline-variant">
+            <span class="material-symbols-outlined text-secondary text-[18px]">badge</span>
+            <p class="font-label-sm text-label-sm text-on-surface-variant">Rol actual: <strong class="text-on-surface">${DB.roleLabels[u.rol]}</strong></p>
+          </div>`}
           <div id="uf-error" class="hidden rounded-lg bg-error-container text-on-error-container px-md py-sm text-body-md"></div>
         </div>
         <div class="flex justify-end gap-sm mt-lg">
@@ -184,60 +204,118 @@ const App = (() => {
     overlay.querySelector("#uf-save").addEventListener("click", () => {
       const nombre = overlay.querySelector("#uf-nombre").value.trim();
       const correo = overlay.querySelector("#uf-correo").value.trim();
-      const rol = overlay.querySelector("#uf-rol").value;
       const err = overlay.querySelector("#uf-error");
-      const dup = state.users.find((x) => x.correo === correo && x.id !== (u ? u.id : -1));
-      if (!nombre || !correo) { err.textContent = "Nombre y correo son obligatorios."; err.classList.remove("hidden"); return; }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) { err.textContent = "Formato de correo inválido."; err.classList.remove("hidden"); return; }
-      if (dup) { err.textContent = "Correo duplicado: ya existe un usuario con ese correo."; err.classList.remove("hidden"); return; }
+      const showErr = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+      // RN-011 (unicidad de correo → RF-011).
+      const dup = state.users.find((x) => x.correo.toLowerCase() === correo.toLowerCase() && x.id !== (u ? u.id : -1));
+      if (!nombre || !correo) return showErr("Nombre y correo son obligatorios.");
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return showErr("Formato de correo inválido.");
+      if (dup) return showErr("Ya existe una cuenta con ese correo (RF-011).");
       if (esNuevo) {
-        state.users.push({ id: Date.now(), nombre, correo, rol, estado: "Activo" });
-        pushAudit("Cambio de rol", `Creó usuario '${nombre}' con rol ${DB.roleLabels[rol]}`);
-        UI.toast("Usuario creado y activo.", "success");
+        const pass = overlay.querySelector("#uf-pass").value;
+        if (!passwordValida(pass, correo)) return showErr("La contraseña debe tener al menos 8 caracteres e incluir mayúscula, minúscula, dígito y carácter especial (RNF-001).");
+        state.users.push({ id: Date.now(), nombre, correo, rol: "administrador", estado: "Activo" });
+        pushAudit("Cambio de rol", `Creó la cuenta '${nombre}' con rol Administrador`);
+        UI.toast("Cuenta creada como Administrador y habilitada.", "success");
       } else {
-        Object.assign(u, { nombre, correo, rol });
-        pushAudit("Cambio de rol", `Editó usuario '${nombre}' (rol: ${DB.roleLabels[rol]})`);
-        UI.toast("Usuario actualizado.", "success");
+        Object.assign(u, { nombre, correo });
+        pushAudit("Cambio de rol", `Editó los datos de la cuenta '${nombre}'`);
+        UI.toast("Cuenta actualizada.", "success");
       }
       save(); UI.closeModal(); render();
     });
   }
 
-  function baja(u) {
+  // RNF-001: complejidad mínima de contraseña.
+  function passwordValida(p, correo) {
+    if (!p || p.length < 8) return false;
+    if (correo && p.toLowerCase() === correo.toLowerCase()) return false;
+    return /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) && /[^A-Za-z0-9]/.test(p);
+  }
+
+  // RF-012 / RN-005: habilitar / deshabilitar cuentas de Administrador.
+  // RF-013 / RN-002: el SuperAdmin no puede deshabilitarse (debe transferirse el rol).
+  function toggleEstado(u) {
+    if (u.rol === "superadmin") {
+      UI.toast("No puedes deshabilitar la cuenta SuperAdmin. Transfiere el rol primero (RF-013).", "warn");
+      return;
+    }
+    const habilitar = u.estado === "Inactivo";
     const overlay = UI.modal(`
       <div class="p-xl text-center">
-        <span class="material-symbols-outlined text-[48px] text-tertiary">person_off</span>
-        <h3 class="font-title-lg text-title-lg text-on-background mt-md">Dar de baja a ${UI.esc(u.nombre)}?</h3>
-        <p class="text-body-md text-on-surface-variant mt-sm">La cuenta se desactivará (baja lógica) conservando su historial para trazabilidad.</p>
+        <span class="material-symbols-outlined text-[48px] ${habilitar ? "text-primary" : "text-tertiary"}">${habilitar ? "how_to_reg" : "person_off"}</span>
+        <h3 class="font-title-lg text-title-lg text-on-background mt-md">${habilitar ? "Habilitar" : "Deshabilitar"} a ${UI.esc(u.nombre)}?</h3>
+        <p class="text-body-md text-on-surface-variant mt-sm">${habilitar ? "La cuenta recuperará el acceso a la plataforma." : "Perderá acceso inmediato y se cerrará su sesión activa (RN-005). El historial se conserva."}</p>
         <div class="flex justify-center gap-sm mt-lg">
           <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant">Cancelar</button>
-          <button id="baja-ok" class="px-lg py-sm rounded-lg bg-tertiary text-on-tertiary text-label-md font-semibold">Dar de baja</button>
+          <button id="tg-ok" class="px-lg py-sm rounded-lg ${habilitar ? "bg-primary text-on-primary" : "bg-tertiary text-on-tertiary"} text-label-md font-semibold">${habilitar ? "Habilitar" : "Deshabilitar"}</button>
         </div>
       </div>`);
-    overlay.querySelector("#baja-ok").addEventListener("click", () => {
-      u.estado = "Inactivo";
-      pushAudit("Cambio de rol", `Dio de baja (lógica) a '${u.nombre}'`);
+    overlay.querySelector("#tg-ok").addEventListener("click", () => {
+      u.estado = habilitar ? "Activo" : "Inactivo";
+      pushAudit("Cambio de rol", `${habilitar ? "Habilitó" : "Deshabilitó"} la cuenta de '${u.nombre}'`);
       save(); UI.closeModal(); render();
-      UI.toast("Usuario desactivado. Historial conservado.", "success");
+      UI.toast(`Cuenta ${habilitar ? "habilitada" : "deshabilitada"}.`, "success");
     });
   }
 
-  function revocar(u) {
+  // RN-009 / RF-014 / RF-015: transferencia atómica del rol SuperAdmin.
+  function transferirSuperadmin(destino) {
+    if (destino.rol === "superadmin") { UI.toast("Esta cuenta ya es SuperAdmin.", "info"); return; }
+    if (destino.estado !== "Activo") { UI.toast("La cuenta destino debe estar habilitada (RF-015).", "warn"); return; }
+    const origen = state.users.find((x) => x.rol === "superadmin");
     const overlay = UI.modal(`
       <div class="p-xl text-center">
-        <span class="material-symbols-outlined text-[48px] text-error">no_accounts</span>
-        <h3 class="font-title-lg text-title-lg text-on-background mt-md">Revocar rol de ${UI.esc(u.nombre)}?</h3>
-        <p class="text-body-md text-on-surface-variant mt-sm">Se revocará el rol de Administrador y el acceso quedará deshabilitado.</p>
+        <span class="material-symbols-outlined text-[48px] text-tertiary">swap_horiz</span>
+        <h3 class="font-title-lg text-title-lg text-on-background mt-md">Transferir rol SuperAdmin</h3>
+        <p class="text-body-md text-on-surface-variant mt-sm">Se transferirá el rol <strong>SuperAdmin</strong> de <strong>${UI.esc(origen.nombre)}</strong> a <strong>${UI.esc(destino.nombre)}</strong>.</p>
+        <p class="text-body-md text-on-surface-variant mt-sm">La operación es <strong>atómica</strong>: la cuenta origen pasará a Administrador (RN-009). Debe existir siempre una sola cuenta SuperAdmin (RN-002).</p>
         <div class="flex justify-center gap-sm mt-lg">
           <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant">Cancelar</button>
-          <button id="rev-ok" class="px-lg py-sm rounded-lg bg-error text-on-error text-label-md font-semibold">Revocar rol</button>
+          <button id="tr-ok" class="px-lg py-sm rounded-lg bg-tertiary text-on-tertiary text-label-md font-semibold">Confirmar transferencia</button>
         </div>
       </div>`);
-    overlay.querySelector("#rev-ok").addEventListener("click", () => {
-      u.estado = "Inactivo";
-      pushAudit("Cambio de rol", `Revocó rol de Administrador a '${u.nombre}' → acceso deshabilitado`);
+    overlay.querySelector("#tr-ok").addEventListener("click", () => {
+      origen.rol = "administrador";
+      destino.rol = "superadmin";
+      pushAudit("Cambio de rol", `Transfirió el rol SuperAdmin de '${origen.nombre}' a '${destino.nombre}'`);
+      // RF-050: aplicar el rol vigente en la sesión activa.
+      if (state.user && state.user.correo === origen.correo) { state.role = "administrador"; }
       save(); UI.closeModal(); render();
-      UI.toast("Rol revocado. Acceso deshabilitado.", "success");
+      UI.toast(`Rol SuperAdmin transferido a ${destino.nombre}.`, "success");
+    });
+  }
+
+  // --- Empresas (RN-035 / RF-052 / RF-053) ----------------------------------
+  function empresaForm() {
+    const overlay = UI.modal(`
+      <div class="p-xl">
+        <h3 class="font-title-lg text-title-lg text-on-background mb-lg flex items-center gap-sm"><span class="material-symbols-outlined text-primary">add_business</span> Registrar empresa</h3>
+        <div class="space-y-md">
+          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Nombre de la empresa</label>
+            <input id="ef-nombre" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="Ej. Compañía Minera del Norte S.A.A."/></div>
+          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Sector (RN-019)</label>
+            <select id="ef-sector" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary">
+              ${DB.sectores.map((s) => `<option>${s}</option>`).join("")}
+            </select></div>
+          <div id="ef-error" class="hidden rounded-lg bg-error-container text-on-error-container px-md py-sm text-body-md"></div>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+          <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant hover:bg-surface-container-low">Cancelar</button>
+          <button id="ef-save" class="px-lg py-sm rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:bg-surface-tint">Registrar</button>
+        </div>
+      </div>`);
+    overlay.querySelector("#ef-save").addEventListener("click", () => {
+      const nombre = overlay.querySelector("#ef-nombre").value.trim();
+      const sector = overlay.querySelector("#ef-sector").value;
+      const err = overlay.querySelector("#ef-error");
+      if (!nombre) { err.textContent = "El nombre es obligatorio (RF-053)."; err.classList.remove("hidden"); return; }
+      if (state.empresas.some((e) => e.nombre.toLowerCase() === nombre.toLowerCase())) { err.textContent = "Ya existe una empresa con ese nombre."; err.classList.remove("hidden"); return; }
+      const id = nombre.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 12) + Date.now().toString().slice(-3);
+      state.empresas.push({ id, nombre, sector, activa: true });
+      pushAudit("Registro de empresa", `Registró la empresa '${nombre}' (sector ${sector})`);
+      save(); UI.closeModal(); render();
+      UI.toast(`Empresa '${nombre}' registrada.`, "success");
     });
   }
 
@@ -247,30 +325,24 @@ const App = (() => {
       bloqueo: root.querySelector("#cfg-bloqueo").checked,
       notif: root.querySelector("#cfg-notif").checked
     };
-    pushAudit("Configuración", `Ajustó expiración de sesión a ${state.config.minutos} minutos`);
+    pushAudit("Configuración", `Ajustó la expiración de sesión a ${state.config.minutos} minutos`);
     save(); render(); startIdleWatch();
     UI.toast("Configuración aplicada y registrada en auditoría.", "success");
   }
 
-  function exportCSV(tipo) {
-    let rows, name;
-    if (tipo === "auditoria") {
-      rows = [["fecha", "usuario", "tipo", "accion"]].concat(state.audit.map((a) => [a.fecha, a.usuario, a.tipo, a.accion]));
-      name = "auditoria_igualab.csv";
-    } else {
-      const pIdx = 0;
-      rows = [["empresa", "ticker", "sector", "precio", "emisiones", "intensidad"]].concat(DB.empresas.map((e) => [e.nombre, e.ticker, e.sector, DB.bolsa.series[e.id].precio[pIdx], DB.bolsa.series[e.id].emisiones[pIdx], DB.bolsa.series[e.id].intensidad[pIdx]]));
-      name = "bolsa_igualab.csv";
-    }
+  // Exportación de auditoría (apoyo a RF-048).
+  function exportCSV() {
+    const rows = [["fecha", "usuario", "tipo", "accion"]].concat(state.audit.map((a) => [a.fecha, a.usuario, a.tipo, a.accion]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = name;
+    a.download = "auditoria_igualab.csv";
     a.click();
-    UI.toast("Exportado: " + name, "success");
+    UI.toast("Exportado: auditoria_igualab.csv", "success");
   }
 
+  // RF-005 / RN-036: expiración de sesión por inactividad.
   function startIdleWatch() {
     clearInterval(timerInterval);
     clearTimeout(idleTimer);
@@ -297,7 +369,7 @@ const App = (() => {
   }
 
   function logout(expired = false) {
-    pushAudit("Inicio de sesión", expired ? "Sesión expirada por inactividad (RNF-01)" : "Cierre de sesión");
+    pushAudit("Inicio de sesión", expired ? "Sesión expirada por inactividad (RF-005)" : "Cierre de sesión");
     state.logged = false;
     state.user = null;
     state.role = null;
@@ -310,16 +382,22 @@ const App = (() => {
 
   const ROLES_VALIDOS = ["superadmin", "administrador"];
 
-  function login(correo, pass) {
+  function login(correo) {
     const err = document.getElementById("login-error");
     err.classList.add("hidden");
-
-    // Mock sin restricciones: siempre entra.
-    // Si el correo coincide con un usuario, se usa; si no, entra con uno por defecto.
+    // Mock permisivo: si el correo coincide con una cuenta habilitada, se usa.
     const user =
-      state.users.find((u) => correo && u.correo.toLowerCase() === correo.toLowerCase()) ||
+      state.users.find((u) => correo && u.correo.toLowerCase() === correo.toLowerCase() && u.estado === "Activo") ||
       state.users.find((u) => u.estado === "Activo" && ROLES_VALIDOS.includes(u.rol)) ||
       state.users[0];
+
+    // RN-004 / Flujo alternativo: cuenta deshabilitada.
+    const exacta = state.users.find((u) => correo && u.correo.toLowerCase() === correo.toLowerCase());
+    if (exacta && exacta.estado !== "Activo") {
+      err.textContent = "Usuario deshabilitado. Contacte al administrador.";
+      err.classList.remove("hidden");
+      return;
+    }
 
     state.logged = true;
     state.user = user;
@@ -334,28 +412,29 @@ const App = (() => {
   function bindGlobal() {
     document.getElementById("form-login").addEventListener("submit", (e) => {
       e.preventDefault();
-      login(document.getElementById("login-email").value.trim(), document.getElementById("login-pass").value);
+      login(document.getElementById("login-email").value.trim());
     });
     document.getElementById("toggle-pass").addEventListener("click", () => {
       const p = document.getElementById("login-pass");
       p.type = p.type === "password" ? "text" : "password";
     });
+    // RF-002 / RNF-007 / RNF-009: recuperación por enlace seguro (30 min).
     document.getElementById("forgot-pass").addEventListener("click", (e) => {
       e.preventDefault();
       UI.modal(`
         <div class="p-xl text-center">
           <span class="material-symbols-outlined text-[48px] text-primary">lock_reset</span>
           <h3 class="font-title-lg text-title-lg text-on-background mt-md">Recuperar contraseña</h3>
-          <p class="text-body-md text-on-surface-variant mt-sm">Te enviaremos un enlace de recuperación al correo registrado.</p>
+          <p class="text-body-md text-on-surface-variant mt-sm">Ingresa tu correo. Si está registrado, te enviaremos un enlace de recuperación con vigencia de <strong>30 minutos</strong> (RF-002).</p>
           <input id="fp-mail" class="w-full mt-lg rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="tu@igualab.org"/>
           <div class="flex justify-center gap-sm mt-lg">
             <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant">Cancelar</button>
             <button id="fp-send" class="px-lg py-sm rounded-lg bg-primary text-on-primary text-label-md font-semibold">Enviar enlace</button>
           </div>
         </div>`);
-      document.getElementById("fp-send").addEventListener("click", () => { UI.closeModal(); UI.toast("Enlace de recuperación enviado por correo.", "success"); });
+      // RNF-007: respuesta idéntica para toda cuenta (no revela existencia).
+      document.getElementById("fp-send").addEventListener("click", () => { UI.closeModal(); UI.toast("Si el correo está registrado, recibirás un enlace de recuperación en los próximos minutos.", "info"); });
     });
-    document.querySelectorAll("[data-action='logout'], [data-action='logout'] *").forEach(() => { });
     document.addEventListener("click", (e) => {
       const t = e.target.closest("[data-action='logout']");
       if (t) { e.preventDefault(); logout(false); }
@@ -365,7 +444,6 @@ const App = (() => {
       const acc = DB.demoAccounts[nuevo];
       state.role = nuevo;
       state.user = state.users.find((u) => u.correo === acc.correo) || { nombre: acc.nombre, correo: acc.correo };
-      pushAudit("Cambio de rol", `Demo: sesión como ${DB.roleLabels[nuevo]} (${state.user.nombre})`);
       render();
       UI.toast(`Ahora navegando como ${DB.roleLabels[nuevo]}`, "info");
     });

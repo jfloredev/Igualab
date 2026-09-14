@@ -48,30 +48,31 @@ Views.publico = {
   after(root) {
     const t = (k) => DB.i18n[App.state.lang][k];
     const results = root.querySelector("#pub-results");
+    const nombreDoc = (d) => `${d.tipo} ${d.anio} - ${d.empresa}`;
     function renderResults(q = "") {
       q = q.toLowerCase();
-      const docs = App.state.documents.filter((d) => d.estado === "Disponible" && (!q || d.nombre.toLowerCase().includes(q) || d.empresa.toLowerCase().includes(q) || d.tipo.toLowerCase().includes(q)));
+      const docs = App.state.documents.filter((d) => d.estado === "Éxito" && (!q || nombreDoc(d).toLowerCase().includes(q) || d.empresa.toLowerCase().includes(q) || d.tipo.toLowerCase().includes(q)));
       results.innerHTML = docs.length ? docs.map((d) => `
         <div class="bg-surface-container-lowest rounded-xl border border-surface-variant p-lg ambient-shadow ambient-shadow-hover flex flex-col">
           <div class="flex justify-between items-start mb-sm">
-            <span class="material-symbols-outlined text-${d.tipo === "Métricas" ? "tertiary" : d.tipo === "Reporte GRI" ? "secondary" : "primary"} text-[28px]">description</span>
-            ${Badges.estadoBadge(d.estado)}
+            <span class="material-symbols-outlined text-${d.tipo === "Reporte de Sostenibilidad GRI" ? "secondary" : "primary"} text-[28px]">description</span>
+            <span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-low border border-outline-variant font-label-sm text-label-sm text-on-surface-variant">${Helpers.esc(d.sector)}</span>
           </div>
-          <h3 class="text-body-lg font-semibold text-on-background mb-xs">${Helpers.esc(d.nombre)}</h3>
-          <p class="font-label-sm text-label-sm text-on-surface-variant mb-md">${Helpers.esc(d.empresa)} · ${d.anio} · ${Helpers.esc(d.fuente)}</p>
+          <h3 class="text-body-lg font-semibold text-on-background mb-xs">${Helpers.esc(nombreDoc(d))}</h3>
+          <p class="font-label-sm text-label-sm text-on-surface-variant mb-md">${Helpers.esc(d.empresa)} · ${d.anio} · ${Helpers.esc(d.tipo)}</p>
           <button data-ver-doc="${d.id}" class="mt-auto flex items-center justify-center gap-sm w-full py-sm rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-primary/5 transition-colors"><span class="material-symbols-outlined text-[16px]">menu_book</span> ${t("verDoc")}</button>
         </div>`).join("") : `<p class="text-body-md text-on-surface-variant">${t("noResults")}</p>`;
       results.querySelectorAll("[data-ver-doc]").forEach((b) => b.addEventListener("click", () => {
         const d = App.state.documents.find((x) => x.id === b.dataset.verDoc);
         Modal.open(`
           <div class="flex justify-between items-center p-lg border-b border-outline-variant">
-            <h3 class="font-title-lg text-title-lg text-on-surface flex items-center gap-sm"><span class="material-symbols-outlined text-primary">menu_book</span> ${Helpers.esc(d.nombre)}</h3>
+            <h3 class="font-title-lg text-title-lg text-on-surface flex items-center gap-sm"><span class="material-symbols-outlined text-primary">menu_book</span> ${Helpers.esc(nombreDoc(d))}</h3>
             <button data-modal-close class="p-2 rounded-lg hover:bg-surface-container-low text-on-surface-variant"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="p-xl">
-            <div class="flex flex-wrap gap-sm mb-lg">${[d.empresa, d.anio, d.tipo, d.fuente].map((x) => `<span class="px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant font-label-sm text-label-sm">${Helpers.esc(x)}</span>`).join("")}</div>
+            <div class="flex flex-wrap gap-sm mb-lg">${[d.empresa, d.anio, d.tipo, d.sector].map((x) => `<span class="px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant font-label-sm text-label-sm">${Helpers.esc(x)}</span>`).join("")}</div>
             <div class="bg-surface-container-low rounded-lg p-lg border border-outline-variant">
-              <p class="text-body-md text-on-surface leading-relaxed mb-md">Este documento se muestra en modo <strong>solo lectura</strong> para el público (RF-14). Las funciones de prospección (asistente IA, reportes) están reservadas a usuarios internos.</p>
+              <p class="text-body-md text-on-surface leading-relaxed mb-md">Este documento se muestra en modo <strong>solo lectura</strong> para el público. Las funciones de prospección (asistente IA, reportes) están reservadas a usuarios internos.</p>
               <div class="space-y-sm">
                 <div class="h-4 bg-surface-container-high rounded w-full"></div>
                 <div class="h-4 bg-surface-container-high rounded w-[92%]"></div>
