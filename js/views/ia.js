@@ -46,17 +46,6 @@ Views.ia = {
               </div>
             </div>
           </div>
-          <aside class="w-[340px] bg-surface-container-lowest border-l border-outline-variant flex-col shrink-0 hidden xl:flex">
-            <div class="p-lg border-b border-outline-variant">
-              <h2 class="font-title-lg text-title-lg text-on-surface flex items-center gap-sm"><span class="material-symbols-outlined text-secondary">analytics</span> Fuentes y análisis</h2>
-              <p id="ia-panel-ctx" class="font-label-sm text-label-sm text-on-surface-variant mt-xs">Selecciona un contexto para ver la evidencia.</p>
-            </div>
-            <div class="flex border-b border-outline-variant px-md">
-              <button data-tab="gri" class="flex-1 py-3 border-b-2 border-primary font-label-md text-label-md text-primary font-bold">Brechas GRI</button>
-              <button data-tab="sanciones" class="flex-1 py-3 border-b-2 border-transparent font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors">Sanciones</button>
-            </div>
-            <div id="panel-fuentes" class="flex-1 overflow-y-auto p-lg space-y-lg chat-scroll"></div>
-          </aside>
         </div>
       </div>`;
   },
@@ -69,8 +58,6 @@ Views.ia = {
     const box = root.querySelector("#chat-box");
     const input = root.querySelector("#chat-input");
     const sendBtn = root.querySelector("#chat-send");
-    const panel = root.querySelector("#panel-fuentes");
-    const panelCtx = root.querySelector("#ia-panel-ctx");
 
     function empresasDe(sector) {
       return Domain.empresasConDocumentos(App.state).filter((e) => !sector || e.sector === sector);
@@ -99,44 +86,14 @@ Views.ia = {
       if (ok) {
         const emp = App.state.empresas.find((e) => e.id === selEmpresa.value);
         ctxLabel.textContent = `Contexto: ${emp.nombre} · ${selAnio.value}`;
-        panelCtx.textContent = `${emp.nombre} · ${selSector.value} · ${selAnio.value}`;
       } else {
         ctxLabel.textContent = "Sin contexto seleccionado";
-        panelCtx.textContent = "Selecciona un contexto para ver la evidencia.";
       }
-      renderPanel(root.querySelector("[data-tab].border-primary") ? root.querySelector("[data-tab].border-primary").dataset.tab : "gri");
     }
 
     selSector.addEventListener("change", () => { refrescarEmpresas(); actualizarEstado(); });
     selEmpresa.addEventListener("change", () => { refrescarAnios(); actualizarEstado(); });
     selAnio.addEventListener("change", actualizarEstado);
-
-    // Panel lateral de evidencia (del análisis del contexto).
-    function renderPanel(tab) {
-      const a = analisisActual();
-      if (!a) { panel.innerHTML = `<p class="text-body-md text-on-surface-variant">Sin contexto. Elige sector, empresa y año.</p>`; return; }
-      if (tab === "gri") {
-        panel.innerHTML = a.gri.map((g) => `
-          <div class="bg-surface border border-outline-variant rounded-lg p-md border-l-4 ${g.estado === "OK" ? "border-l-primary" : g.estado === "Baja sustancia" ? "border-l-tertiary" : "border-l-error"}">
-            <div class="flex justify-between items-start mb-sm"><span class="bg-secondary-fixed text-on-secondary-fixed px-2 py-0.5 rounded text-[10px] font-bold uppercase">${g.codigo}</span>${Badges.estadoBadge(g.estado)}</div>
-            <h4 class="font-label-md text-label-md font-bold text-on-surface mb-xs">${Helpers.esc(g.tema)}</h4>
-            <p class="font-label-sm text-label-sm text-on-surface-variant italic">${Helpers.esc(g.cita)}</p>
-            <p class="mt-sm font-label-sm text-label-sm text-outline">${Helpers.esc(g.doc)} · ${Helpers.esc(g.pagina)}</p>
-          </div>`).join("");
-      } else {
-        panel.innerHTML = a.sanciones.length ? a.sanciones.map((s) => `
-          <div class="bg-surface border border-outline-variant rounded-lg p-md border-l-4 border-l-error">
-            <h4 class="font-label-md text-label-md font-bold text-on-surface">${Helpers.esc(s.entidad)}</h4>
-            <p class="font-label-sm text-label-sm text-on-surface-variant mb-sm">${Helpers.esc(s.motivo)}</p>
-            ${s.monto != null ? `<p class="font-title-lg text-title-lg text-error font-bold">${Helpers.money(s.monto)}</p>` : '<span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm">No cuantificada</span>'}
-          </div>`).join("") : `<p class="text-body-md text-on-surface-variant">Sin sanciones en el corpus de este contexto.</p>`;
-      }
-    }
-    root.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => {
-      root.querySelectorAll("[data-tab]").forEach((x) => x.className = x.className.replace("border-primary text-primary font-bold", "border-transparent text-on-surface-variant"));
-      b.className = b.className.replace("border-transparent text-on-surface-variant", "border-primary text-primary font-bold");
-      renderPanel(b.dataset.tab);
-    }));
 
     // --- Chat -----------------------------------------------------------------
     const messages = root.querySelector("#chat-messages");

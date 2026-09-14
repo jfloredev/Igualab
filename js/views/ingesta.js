@@ -28,15 +28,22 @@ Views.ingesta = {
               </div>
               <label id="dropzone" class="dropzone flex flex-col items-center justify-center gap-sm border-2 border-dashed border-outline-variant rounded-xl p-lg text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                 <span class="material-symbols-outlined text-[36px] text-primary">cloud_upload</span>
-                <span class="text-body-md text-on-background font-medium">Arrastra el .md aquí o haz clic</span>
+                <span class="text-body-md text-on-background font-medium">Arrastra el .md aquí o haz clic para seleccionar</span>
                 <span class="font-label-sm text-label-sm text-outline">Sólo Markdown (.md) · hasta 50 MB (RNF-014)</span>
                 <input id="file-input" type="file" multiple class="hidden" accept=".md,text/markdown"/>
               </label>
+              <div id="ing-staged" class="hidden rounded-lg border border-outline-variant bg-surface-container-low p-sm">
+                <p class="font-label-sm text-label-sm text-on-surface-variant uppercase mb-xs">Archivo(s) por ingestar</p>
+                <ul id="ing-staged-list" class="space-y-xs text-body-md text-on-surface"></ul>
+              </div>
               <div id="ing-progress" class="hidden">
                 <div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant mb-xs"><span id="ing-progress-label">Procesando…</span><span id="ing-progress-pct">0%</span></div>
                 <div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden"><div id="ing-progress-bar" class="h-full bg-primary transition-all duration-200" style="width:0%"></div></div>
               </div>
               <p class="font-label-sm text-label-sm text-outline flex items-start gap-xs"><span class="material-symbols-outlined text-[14px]">info</span> Procesamiento síncrono: se valida, indexa y ejecuta el análisis al finalizar (RF-022).</p>
+              <button id="ing-run" disabled class="w-full bg-primary text-on-primary py-md px-lg rounded-lg flex items-center justify-center gap-sm shadow-md hover:bg-surface-tint transition-all text-body-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined">cloud_sync</span> Realizar ingesta
+              </button>
             </div>
           </div>
         </div>
@@ -84,6 +91,11 @@ function bindIngesta(root) {
   const pct = root.querySelector("#ing-progress-pct");
   const progLabel = root.querySelector("#ing-progress-label");
 
+  const staged = root.querySelector("#ing-staged");
+  const stagedList = root.querySelector("#ing-staged-list");
+  const runBtn = root.querySelector("#ing-run");
+  let pendientes = [];
+
   function refrescarEmpresas() {
     const empresas = App.state.empresas.filter((e) => e.sector === selSector.value && e.activa);
     selEmpresa.innerHTML = empresas.length
@@ -93,13 +105,27 @@ function bindIngesta(root) {
   refrescarEmpresas();
   selSector.addEventListener("change", refrescarEmpresas);
 
+  function escenificar(files) {
+    pendientes = files;
+    if (!pendientes.length) { staged.classList.add("hidden"); runBtn.disabled = true; return; }
+    staged.classList.remove("hidden");
+    runBtn.disabled = false;
+    stagedList.innerHTML = pendientes.map((f) => `<li class="flex items-center gap-xs"><span class="material-symbols-outlined text-[16px] text-primary">description</span> ${Helpers.esc(f.name)} <span class="text-outline">· ${(f.size / 1e6).toFixed(1)} MB</span></li>`).join("");
+  }
+
   dz.addEventListener("click", () => input.click());
   ["dragover", "dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => {
     e.preventDefault();
     dz.classList.toggle("dropzone-active", ev === "dragover");
-    if (ev === "drop" && e.dataTransfer.files.length) procesar(Array.from(e.dataTransfer.files));
+    if (ev === "drop" && e.dataTransfer.files.length) escenificar(Array.from(e.dataTransfer.files));
   }));
-  input.addEventListener("change", () => { if (input.files.length) procesar(Array.from(input.files)); input.value = ""; });
+  input.addEventListener("change", () => { if (input.files.length) escenificar(Array.from(input.files)); input.value = ""; });
+
+  runBtn.addEventListener("click", () => {
+    if (!pendientes.length) { UI.toast("Selecciona primero un archivo .md.", "warn"); return; }
+    procesar(pendientes);
+    escenificar([]);
+  });
 
   function rechazar(nombre, motivo) {
     App.pushAudit("Rechazo de documento", `Rechazó '${nombre}': ${motivo}`);

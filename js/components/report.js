@@ -9,7 +9,6 @@ const Report = (() => {
     const esg = Domain.esgScore(a.gri);
     const conteo = Domain.conteoEstados(a.gri);
     const resSan = Domain.resumenSanciones(a.sanciones);
-    const riesgo = Domain.riesgoDesdeEsg(esg);
 
     return `
       <div class="w-[800px] max-w-full bg-white shadow-[0_12px_32px_rgba(0,0,0,0.08)] rounded-sm flex flex-col mx-auto">
@@ -32,14 +31,13 @@ const Report = (() => {
           <!-- Resumen ejecutivo automático (RF-041) -->
           <div>
             <h2 class="font-headline-md text-headline-md text-primary mb-3 flex items-center gap-2"><span class="material-symbols-outlined text-primary">summarize</span> Resumen ejecutivo</h2>
-            <div class="grid grid-cols-4 gap-3 mb-4">
+            <div class="grid grid-cols-3 gap-3 mb-4">
               <div class="border border-surface-variant rounded p-3 border-t-4 border-t-primary"><div class="font-label-sm text-label-sm text-outline uppercase">Puntaje ESG</div><div class="font-headline-md text-headline-md text-on-surface">${esg == null ? "—" : esg}<span class="text-title-lg text-outline">/100</span></div></div>
-              <div class="border border-surface-variant rounded p-3 border-t-4 border-t-secondary"><div class="font-label-sm text-label-sm text-outline uppercase">Riesgo</div><div class="font-headline-md text-headline-md text-on-surface">${Helpers.esc(riesgo)}</div></div>
-              <div class="border border-surface-variant rounded p-3 border-t-4 border-t-tertiary"><div class="font-label-sm text-label-sm text-outline uppercase">Sanciones (S/)</div><div class="font-headline-md text-headline-md text-on-surface">${resSan.total ? Helpers.money(resSan.total).replace("S/ ", "") : "0"}</div></div>
+              <div class="border border-surface-variant rounded p-3 border-t-4 border-t-tertiary"><div class="font-label-sm text-label-sm text-outline uppercase">Total sanciones (S/)</div><div class="font-headline-md text-headline-md text-on-surface">${resSan.total ? Helpers.money(resSan.total).replace("S/ ", "") : "0"}</div></div>
               <div class="border border-surface-variant rounded p-3 border-t-4 border-t-outline"><div class="font-label-sm text-label-sm text-outline uppercase">Sin monto</div><div class="font-headline-md text-headline-md text-on-surface">${resSan.sinMonto}</div></div>
             </div>
             <p class="text-body-md text-on-surface leading-relaxed">
-              ${Helpers.esc(e.nombre)} presenta un puntaje ESG de <strong>${esg == null ? "sin datos" : esg + "/100"}</strong> (riesgo <strong>${Helpers.esc(riesgo)}</strong>) en ${anio}.
+              ${Helpers.esc(e.nombre)} presenta un puntaje ESG de <strong>${esg == null ? "sin datos" : esg + "/100"}</strong> en ${anio}.
               Brechas GRI por estado: <strong>${conteo["OK"]} OK</strong>, <strong>${conteo["Baja sustancia"]} baja sustancia</strong> y <strong>${conteo["Sub-reportado"]} sub-reportado</strong>.
               Sanciones cuantificadas por <strong>${Helpers.money(resSan.total)}</strong>${resSan.sinMonto ? ` y <strong>${resSan.sinMonto}</strong> sanción(es) sin monto determinado` : ""}.
             </p>

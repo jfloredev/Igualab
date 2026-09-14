@@ -16,16 +16,12 @@ const App = (() => {
 
   const MENUS = {
     superadmin: [
-      { key: "dashboard", label: "Dashboard", icon: "dashboard" },
       { key: "usuarios", label: "Usuarios y roles", icon: "group" },
-      { key: "empresas", label: "Empresas", icon: "domain" },
       { key: "ingesta", label: "Ingesta de documentos", icon: "upload_file" },
-      { key: "auditoria", label: "Auditoría", icon: "history" },
-      { key: "config", label: "Configuración", icon: "settings" }
+      { key: "auditoria", label: "Auditoría", icon: "history" }
     ],
     administrador: [
       { key: "dashboard", label: "Dashboard", icon: "dashboard" },
-      { key: "analisis", label: "Análisis GRI y sanciones", icon: "rule" },
       { key: "ia", label: "Asistente de IA", icon: "psychology" },
       { key: "reportes", label: "Reportes de prospección", icon: "assessment" },
       { key: "descargas", label: "Descargar reportes", icon: "download" }
@@ -157,9 +153,6 @@ const App = (() => {
       el.addEventListener("click", () => {
         const a = el.dataset.action;
         if (a === "crear-usuario") userForm(null);
-        if (a === "crear-empresa") empresaForm();
-        if (a === "cfg-save") saveConfig(root);
-        if (a === "cfg-cancel") UI.toast("Cambios descartados.", "info");
         if (a === "export-audit") exportCSV("auditoria");
         if (a === "go-auditoria") { location.hash = "#/auditoria"; }
         if (a === "aud-clear") ["#aud-tipo", "#aud-user", "#aud-desde", "#aud-hasta"].forEach((s) => { root.querySelector(s).value = ""; root.querySelector(s).dispatchEvent(new Event("change")); });
@@ -284,50 +277,6 @@ const App = (() => {
       save(); UI.closeModal(); render();
       UI.toast(`Rol SuperAdmin transferido a ${destino.nombre}.`, "success");
     });
-  }
-
-  // --- Empresas (RN-035 / RF-052 / RF-053) ----------------------------------
-  function empresaForm() {
-    const overlay = UI.modal(`
-      <div class="p-xl">
-        <h3 class="font-title-lg text-title-lg text-on-background mb-lg flex items-center gap-sm"><span class="material-symbols-outlined text-primary">add_business</span> Registrar empresa</h3>
-        <div class="space-y-md">
-          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Nombre de la empresa</label>
-            <input id="ef-nombre" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary" placeholder="Ej. Compañía Minera del Norte S.A.A."/></div>
-          <div class="flex flex-col gap-xs"><label class="font-label-md text-label-md text-on-surface-variant">Sector (RN-019)</label>
-            <select id="ef-sector" class="rounded-xl border-outline-variant py-sm px-md text-body-md focus:border-primary focus:ring-primary">
-              ${DB.sectores.map((s) => `<option>${s}</option>`).join("")}
-            </select></div>
-          <div id="ef-error" class="hidden rounded-lg bg-error-container text-on-error-container px-md py-sm text-body-md"></div>
-        </div>
-        <div class="flex justify-end gap-sm mt-lg">
-          <button data-modal-close class="px-lg py-sm rounded-lg border border-outline-variant text-body-md text-on-surface-variant hover:bg-surface-container-low">Cancelar</button>
-          <button id="ef-save" class="px-lg py-sm rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:bg-surface-tint">Registrar</button>
-        </div>
-      </div>`);
-    overlay.querySelector("#ef-save").addEventListener("click", () => {
-      const nombre = overlay.querySelector("#ef-nombre").value.trim();
-      const sector = overlay.querySelector("#ef-sector").value;
-      const err = overlay.querySelector("#ef-error");
-      if (!nombre) { err.textContent = "El nombre es obligatorio (RF-053)."; err.classList.remove("hidden"); return; }
-      if (state.empresas.some((e) => e.nombre.toLowerCase() === nombre.toLowerCase())) { err.textContent = "Ya existe una empresa con ese nombre."; err.classList.remove("hidden"); return; }
-      const id = nombre.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 12) + Date.now().toString().slice(-3);
-      state.empresas.push({ id, nombre, sector, activa: true });
-      pushAudit("Registro de empresa", `Registró la empresa '${nombre}' (sector ${sector})`);
-      save(); UI.closeModal(); render();
-      UI.toast(`Empresa '${nombre}' registrada.`, "success");
-    });
-  }
-
-  function saveConfig(root) {
-    state.config = {
-      minutos: parseInt(root.querySelector("#cfg-min").value, 10),
-      bloqueo: root.querySelector("#cfg-bloqueo").checked,
-      notif: root.querySelector("#cfg-notif").checked
-    };
-    pushAudit("Configuración", `Ajustó la expiración de sesión a ${state.config.minutos} minutos`);
-    save(); render(); startIdleWatch();
-    UI.toast("Configuración aplicada y registrada en auditoría.", "success");
   }
 
   // Exportación de auditoría (apoyo a RF-048).
