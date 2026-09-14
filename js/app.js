@@ -21,7 +21,6 @@ const App = (() => {
       { key: "auditoria", label: "Auditoría", icon: "history" }
     ],
     administrador: [
-      { key: "dashboard", label: "Dashboard", icon: "dashboard" },
       { key: "ia", label: "Asistente de IA", icon: "psychology" },
       { key: "reportes", label: "Reportes de prospección", icon: "assessment" },
       { key: "descargas", label: "Descargar reportes", icon: "download" }
