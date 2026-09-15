@@ -48,9 +48,12 @@ Views.ingesta = {
           </div>
         </div>
         <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-surface-variant shadow-sm overflow-hidden">
-          <div class="p-lg border-b border-outline-variant bg-surface-bright flex justify-between items-center">
+          <div class="p-lg border-b border-outline-variant bg-surface-bright flex justify-between items-center gap-md">
             <h3 class="font-title-lg text-title-lg text-on-surface">Documentos ingestados</h3>
-            <span class="font-label-sm text-label-sm text-on-surface-variant">Estado, tipo y fecha (RF-024)</span>
+            <div class="flex items-center gap-md">
+              <span class="hidden sm:inline font-label-sm text-label-sm text-on-surface-variant">Estado, tipo y fecha (RF-024)</span>
+              <button data-action="crear-empresa" class="flex items-center gap-sm px-md py-sm bg-primary text-on-primary rounded-lg text-label-md font-semibold hover:bg-surface-tint transition-colors shadow-sm"><span class="material-symbols-outlined text-[18px]">add_business</span> Agregar empresa</button>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
